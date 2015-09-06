@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.orbital.myapplication"
+    android:versionCode="1"
+    android:versionName="1.0" >
+    <uses-sdk android:minSdkVersion="8"
+        android:targetSdkVersion="17" />
+
+    <uses-feature android:name="android.hardware.usb.host" />
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-permission android:name="android.permission.CAMERA"/>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name" >
+        <activity
+            android:name=".HardwareCheckActivity"
+            android:launchMode="singleInstance"
+            android:label="@string/app_name"
+            android:keepScreenOn="true"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/device_filter" />
+        </activity>
+
+        <activity
+            android:name=".DemoAppSelector"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+            android:parentActivityName= ".HardwareCheckActivity">
+        </activity>
+
+        <activity
+            android:name=".PressureDistroActivity"
+            android:keepScreenOn="true"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+            android:parentActivityName= ".DemoAppSelector">
+        </activity>
+
+        <activity
+            android:name=".CameraActivity"
+            android:keepScreenOn="true"
+            android:screenOrientation="portrait"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+            android:parentActivityName= ".DemoAppSelector">
+        </activity>
+
+        <activity
+        android:name=".ScrollerActivity"
+        android:keepScreenOn="true"
+        android:screenOrientation="portrait"
+        android:label="@string/app_name"
+        android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+        android:parentActivityName= ".DemoAppSelector">
+    </activity>
+
+        <activity
+            android:name=".AudioActivity"
+            android:keepScreenOn="true"
+            android:screenOrientation="portrait"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+            android:parentActivityName= ".DemoAppSelector">
+        </activity>
+    </application>
+
+</manifest>

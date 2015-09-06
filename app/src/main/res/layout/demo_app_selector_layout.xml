@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000">
+
+    <Button android:layout_width="fill_parent" android:layout_height="wrap_content"
+        android:text="@string/pde_button_map"
+        android:id="@+id/pde_button"
+        android:clickable="true"
+        android:layout_x="0dp"
+        android:layout_y="51dp" />
+
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="@string/pdm_descr"
+        android:padding="5dip"
+        android:layout_x="4dp"
+        android:layout_y="96dp"
+        android:id="@+id/pressureMapDemoText" />
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="@string/about" android:padding="15dip"
+        android:gravity="center"
+        android:clickable="false"
+        android:fontFamily="@string/abc_action_bar_home_description_format"
+        android:layout_x="0dp"
+        android:layout_y="489dp"
+        android:textSize="16sp"
+        android:textIsSelectable="false"
+        android:textStyle="italic" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/demo_selector"
+        android:id="@+id/textView"
+        android:layout_x="74dp"
+        android:layout_y="0dp" />
+
+    <Button
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Scroller"
+        android:id="@+id/scroll_button"
+        android:clickable="true"
+        android:layout_x="0dp"
+        android:layout_y="162dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Scroll with your thumb by swiping the top right side strip. Applied pressure will alter the scroll speed"
+        android:padding="5dip"
+        android:layout_x="3dp"
+        android:layout_y="206dp"
+        android:id="@+id/scrollDemoText" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/camera_descr"
+        android:padding="5dip"
+        android:layout_x="4dp"
+        android:layout_y="332dp"
+        android:id="@+id/cameraDemoText" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/camera_button"
+        android:id="@+id/cameraButton"
+        android:clickable="true"
+        android:layout_x="1dp"
+        android:layout_y="286dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="*Except that which is referenced in the report"
+        android:id="@+id/textView5"
+        android:layout_x="0dp"
+        android:layout_y="554dp"
+        android:textSize="10dp" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/SynthText"
+        android:id="@+id/audioButton"
+        android:clickable="true"
+        android:layout_x="1dp"
+        android:layout_y="385dp" />
+
+</AbsoluteLayout>
+
+
+
+
+
+
+
+
