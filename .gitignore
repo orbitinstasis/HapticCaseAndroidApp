@@ -9,6 +9,7 @@ backup/
 .DS_Store
 build
 
+
 # Built application files
 *.apk
 *.ap_
@@ -34,6 +35,11 @@ build/
 */build/
 gradle/*
 
+.gradle/
+build/
+/*/build/
+
+
 # Local configuration file (sdk path, etc)
 local.properties
 
@@ -41,4 +47,7 @@ local.properties
 proguard/
 
 # Log Files
+
+*.log
+
 *.log
