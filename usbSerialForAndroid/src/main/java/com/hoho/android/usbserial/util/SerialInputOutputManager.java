@@ -154,6 +154,10 @@ public class SerialInputOutputManager implements Runnable {
         }
     }
 
+    public void purgeInputBuffer() {
+        mReadBuffer.clear();
+    }
+
     private void step() throws IOException {
         // Handle incoming data.
         int len = mDriver.read(mReadBuffer.array(), READ_WAIT_MILLIS);

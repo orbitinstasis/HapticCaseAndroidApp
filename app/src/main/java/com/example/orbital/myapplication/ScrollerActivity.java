@@ -223,12 +223,12 @@ public class ScrollerActivity extends Activity {
         }).start();
     }
 
-    @Override
-    public void onBackPressed() {
-        scrollControllerHandler.removeCallbacks(scrollControllerThread);
-        stopIoManager();
-        finish();
-    }
+//    @Override
+//    public void onBackPressed() {
+//        scrollControllerHandler.removeCallbacks(scrollControllerThread);
+//        stopIoManager();
+//        finish();
+//    }
 
     @Override
     protected void onPause() {

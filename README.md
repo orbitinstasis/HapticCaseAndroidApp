@@ -12,7 +12,9 @@
 build an apk from android studio and install it from within the host device
 
 ## TODO List:
-- [ ] Android App: adapt app to send these RX signals for mode and power selection
+- [ ] Android App: adapt app to send these RX signals for mode and power selection (need to keep track of rx mode) [new state in FSM]
+- [ ] restrict any Rx from host to limimt of 254 to not cause unpredicted behaviour from client 
+- [ ] when requesting a sensor, the client echos your request back. assert on the host that it is correct else return an error
 - [ ] Android App: refactor app 
 - [ ] Android App: look into making a service
 

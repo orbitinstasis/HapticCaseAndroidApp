@@ -39,7 +39,6 @@ import android.os.Process;
 import android.util.Log;
 import android.widget.LinearLayout;
 
-
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
@@ -48,25 +47,31 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class PressureDistroActivity extends Activity {
-    /*
-    CONSTANTS
-     */
-    private static final int MAX_STRIP_CELLS = 2;
-    private static final int STRIP_PRESSURE = 0;
-    private static final int STRIP_POSITION = 1;
-    private static final int END_MARKER_XYZ = 0xFF;
-    private static final int ROWS = 10;
-    private static final int COLS = 16;
+
     private static final int RECT_SIZE = 90;
-    private static final int TOP_STRIP_FORCE = 175;
+
+    //CONSTANTS
+    private static final int MAX_STRIP_CELLS = 2;
+    protected static final int STRIP_PRESSURE = 0;
+    protected static final int STRIP_POSITION = 1;
+    protected static final int END_MARKER_XYZ = 0xFF;
+    protected static final int ROWS = 10;
+    protected static final int COLS = 16;
+    protected static final int TOP_STRIP_FORCE = 175;
     private static final int MAX_RECEIVE_VALUE = 254;
-    private static final int TOP_PAD_FORCE = 130;
+    protected static final int TOP_PAD_FORCE = 130;
+    protected static final int BAUD_FULL = 230400;
+    protected static final int BAUD_SLEEP = 14400;
+    protected static final byte[] PDM_RX_VALUE = {(byte)0b00011111};
+    protected static final byte[] RX_SLEEP = {0};
+
+
 
     /*
     GLOBALS
      */
-    private enum retrieveState { 
-        IN_STRIP_1, 
+    protected enum retrieveState {
+        IN_STRIP_1,
         IN_STRIP_2,
         IN_STRIP_3,
         IN_STRIP_4,
@@ -74,49 +79,50 @@ public class PressureDistroActivity extends Activity {
         READY      // ready to save UART data to new sensor set -- check for markers
         ;
     }
-    private retrieveState retriever = retrieveState.READY;
     private int resumeSensor = 0; //this will hold the state for whatever thing you were in the middle of reading of when buffer.size was read, so you resume at this point    // in the drawThread just update the 2D array by doibng for [readModel/(ROWS-2)][readModel % COLS]  or something like this
     private int stripSensor = 0;
     private int xCount = 0;
     private int yCount = 0;
     private boolean gotZero = false;
-    private int[][] padCell = new int[ROWS][COLS];
-    private int[][] oldPadCell = new int[ROWS][COLS];
-    private Thread drawThread;
-    private Handler drawHandler = new Handler();
+    protected int[][] padCell = new int[ROWS][COLS];
+    protected int[][] oldPadCell = new int[ROWS][COLS];
+    protected retrieveState retriever = retrieveState.READY;
+    protected int oldStripForce[] = {0,0,0,0};
+    protected int stripModel[][] = {{0,0},{0,0},{0,0},{0,0}}; //for each sensor, you have 1st: pressure, 2nd: position
+    private Control control = new Control();
+    static protected Thread drawThread;
+    static protected Handler drawHandler = new Handler();
     private Paint blank = new Paint();
-    private final String TAG = PressureDistroActivity.class.getSimpleName();
-    private static UsbSerialPort sPort = null; //Driver instance, passed in statically via {@link #show(Context, UsbSerialPort)}.
+    private  final String TAG = PressureDistroActivity.class.getSimpleName();
     private Paint stripPaint = new Paint();
     private Bitmap bg = Bitmap.createBitmap(1080, 1920, Bitmap.Config.ARGB_8888);
     private Canvas canvas = new Canvas(bg);
-    private int oldStripForce[] = {0,0,0,0};
-    private int stripModel[][] = {{0,0},{0,0},{0,0},{0,0}}; //for each sensor, you have 1st: pressure, 2nd: position
-    private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
-    private SerialInputOutputManager mSerialIoManager;
-   // private Paint greyed = new Paint();
     private Paint padPaint = new Paint();
-    private final SerialInputOutputManager.Listener mListener =
+    protected static UsbSerialPort sPort = null;
+    protected  final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
+    protected  SerialInputOutputManager mSerialIoManager;
+    protected final SerialInputOutputManager.Listener mListener =
             new SerialInputOutputManager.Listener() {
                 @Override
                 public void onRunError(Exception e) {
                     Log.d(TAG, "Runner stopped.");
-                    drawHandler.removeCallbacks(drawThread);
+                    drawHandler.removeCallbacks(PressureDistroActivity.drawThread);
                     stopIoManager();
                     android.os.Process.killProcess(android.os.Process.myPid());
                     System.exit(1);
                 }
                 @Override
                 public void onNewData(final byte[] data) {
-                    Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
+                    android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
                     PressureDistroActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            PressureDistroActivity.this.updateReceivedData(data);
+                            updateReceivedData(data);
                         }
                     });
                 }
             };
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -127,16 +133,13 @@ public class PressureDistroActivity extends Activity {
                 padCell[i][j] = 0;
                 oldPadCell[i][j] = 0;
             }
-
         }
+
         setContentView(R.layout.pressure_distro_layout);
         canvas.drawColor(Color.WHITE);
         blank.setColor(Color.WHITE);
         stripPaint.setColor(Color.parseColor("#d35400")); // pumpkin orange
         padPaint.setColor(Color.parseColor("#c0392b"));
-//        greyed.setColor(Color.parseColor("#ecf0f1")); //silver #95a5a6
-//        canvas.drawRect(90,0,990,240,greyed);
-//        canvas.drawRect(90,1680,990,1920,greyed);
         drawStripsThread();
     }
 
@@ -157,7 +160,7 @@ public class PressureDistroActivity extends Activity {
             }
             try {
                 sPort.open(connection);
-                sPort.setParameters(230400, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+                sPort.setParameters(BAUD_SLEEP, UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
                 drawHandler.post(drawThread);
             } catch (IOException e) {
                 Log.e(TAG, "Error setting up device: " + e.getMessage(), e);
@@ -172,9 +175,20 @@ public class PressureDistroActivity extends Activity {
             };
         }
         onDeviceStateChange();
+        try {
+            setControl(PDM_RX_VALUE);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    private void programError(){
+    protected void setControl(byte[] desiredSensors) throws IOException {
+        mSerialIoManager.purgeInputBuffer();
+        mSerialIoManager.writeAsync(desiredSensors);
+        sPort.setParameters(BAUD_FULL, UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+    }
+
+    protected void programError(){
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
         alertDialogBuilder.setTitle("Opening device failed");
         alertDialogBuilder
@@ -183,9 +197,28 @@ public class PressureDistroActivity extends Activity {
                 .setPositiveButton("Ok",
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
+                                byte[] temp = {0};
+                                mSerialIoManager.writeAsync(temp);
                                 moveTaskToBack(true);
                                 android.os.Process.killProcess(android.os.Process.myPid());
                                 System.exit(1);
+                            }
+                        });
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+    }
+
+    private void programWarning(){
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setTitle("Sensor selection failed");
+        alertDialogBuilder
+                .setMessage("Please try again or check your connection if this continues to fail")
+                .setCancelable(false)
+                .setPositiveButton("Ok",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                onPause();
+                                moveTaskToBack(true);
                             }
                         });
         AlertDialog alertDialog = alertDialogBuilder.create();
@@ -205,7 +238,7 @@ public class PressureDistroActivity extends Activity {
                         int wipeTop = 0;
                         int wipeRight = 0;
                         int wipeBottom = 0;
-                        int position = (int)map(stripModel[drawSensor][STRIP_POSITION], 0, 254, 45, 915);
+                        int position = (int) control.map(stripModel[drawSensor][STRIP_POSITION], 0, 254, 45, 915);
                         switch (drawSensor) {
                             case 0: // right top
                                 tempX = 1035;
@@ -237,11 +270,11 @@ public class PressureDistroActivity extends Activity {
                                 break;
 
                         }
-                        stripPaint.setAlpha((int) (map(force, 0, TOP_STRIP_FORCE, 10, 255)));
+                        stripPaint.setAlpha((int) (control.map(force, 0, TOP_STRIP_FORCE, 10, 255)));
                         oldStripForce[drawSensor] = force;
                         canvas.drawRect(wipeLeft,wipeTop,wipeRight,wipeBottom,blank);
                         if (force > 0) {
-                            canvas.drawCircle(tempX, wipeTop+position, (int)(map(force, 0, TOP_STRIP_FORCE, 18, 45)), stripPaint);
+                            canvas.drawCircle(tempX, wipeTop + position, (int) (control.map(force, 0, TOP_STRIP_FORCE, 18, 45)), stripPaint);
                         }
                     }
                 }
@@ -249,7 +282,7 @@ public class PressureDistroActivity extends Activity {
                 for (int i = 0; i<ROWS; i++) {
                     for (int j = 0; j < COLS; j++) {
                         if (padCell[i][j] != oldPadCell[i][j]) {
-                            padPaint.setAlpha((int) map(padCell[i][j], 0, TOP_PAD_FORCE, 10, 255));
+                            padPaint.setAlpha((int) control.map(padCell[i][j], 0, TOP_PAD_FORCE, 10, 255));
                             oldPadCell[i][j] = padCell[i][j];
                             canvas.drawRect(RECT_SIZE + (i * RECT_SIZE), 240 + (j * RECT_SIZE), RECT_SIZE + RECT_SIZE + (i * RECT_SIZE), RECT_SIZE + 240 + (j * RECT_SIZE), blank);
                             if (padCell[i][j] > 0) {
@@ -265,40 +298,37 @@ public class PressureDistroActivity extends Activity {
         };
     }
 
-    private long map(long x, long in_min, long in_max, long out_min, long out_max)
-    {
-        if (x > in_max) x = in_max;
-        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-    }
+
 
     @Override
     protected void onPause() {
         super.onPause();
-        stopIoManager();
         drawHandler.removeCallbacks(drawThread);
+        mSerialIoManager.writeAsync(RX_SLEEP);
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         if (sPort != null) {
             try {
+                sPort.setParameters(BAUD_SLEEP, UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
                 sPort.close();
             } catch (IOException e) {
                 // Ignore.
             }
             sPort = null;
         }
-        finish();
-    }
-
-    @Override
-    public void onBackPressed() {
-        drawHandler.removeCallbacks(drawThread);
         stopIoManager();
         finish();
     }
-    /*
-    side strips return 255 max for force appluied to the top side of the strip relative to the boards orientation
-        therefore, strips on the right hand side had to have their positions flipped.
 
-        can read strip sensors force and if it's 0 then auto assign the posiotion a 0 and i++
-     */
+    /*
+ side strips return 255 max for force appluied to the top side of the strip relative to the boards orientation
+ therefore, strips on the right hand side had to have their positions flipped.
+
+ can read strip sensors force and if it's 0 then auto assign the posiotion a 0 and i++
+*/
     private void updateReceivedData(byte[] data) {
         int i = 0;
         boolean isFirstStateChange = false;
@@ -427,7 +457,7 @@ public class PressureDistroActivity extends Activity {
         stopIoManager();
         startIoManager();
     }
-
+    
     /**
      * Starts the activity, using the supplied driver instance.
      *
