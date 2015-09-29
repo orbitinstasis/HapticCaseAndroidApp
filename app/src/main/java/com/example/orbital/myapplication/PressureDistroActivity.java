@@ -1,5 +1,5 @@
 /*
-   Haptic Feedback Case - Applications 
+   Haptic Feedback Case - Applications
    Copyright (C) 2015: Ben Kazemi, ben.kazemi@gmail.com
    Copyright 2011-2013 Google Inc.
    Copyright 2013 mike wakerly <opensource@hoho.com>
@@ -108,12 +108,12 @@ public class PressureDistroActivity extends Activity {
                     Log.d(TAG, "Runner stopped.");
                     drawHandler.removeCallbacks(PressureDistroActivity.drawThread);
                     stopIoManager();
-                    android.os.Process.killProcess(android.os.Process.myPid());
+                    Process.killProcess(Process.myPid());
                     System.exit(1);
                 }
                 @Override
                 public void onNewData(final byte[] data) {
-                    android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
+                    Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
                     PressureDistroActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -200,7 +200,7 @@ public class PressureDistroActivity extends Activity {
                                 byte[] temp = {0};
                                 mSerialIoManager.writeAsync(temp);
                                 moveTaskToBack(true);
-                                android.os.Process.killProcess(android.os.Process.myPid());
+                                Process.killProcess(Process.myPid());
                                 System.exit(1);
                             }
                         });
@@ -238,7 +238,7 @@ public class PressureDistroActivity extends Activity {
                         int wipeTop = 0;
                         int wipeRight = 0;
                         int wipeBottom = 0;
-                        int position = (int) control.map(stripModel[drawSensor][STRIP_POSITION], 0, 254, 45, 915);
+                        int position = (int) map(stripModel[drawSensor][STRIP_POSITION], 0, 254, 45, 915);
                         switch (drawSensor) {
                             case 0: // right top
                                 tempX = 1035;
@@ -270,11 +270,11 @@ public class PressureDistroActivity extends Activity {
                                 break;
 
                         }
-                        stripPaint.setAlpha((int) (control.map(force, 0, TOP_STRIP_FORCE, 10, 255)));
+                        stripPaint.setAlpha((int) (map(force, 0, TOP_STRIP_FORCE, 10, 255)));
                         oldStripForce[drawSensor] = force;
                         canvas.drawRect(wipeLeft,wipeTop,wipeRight,wipeBottom,blank);
                         if (force > 0) {
-                            canvas.drawCircle(tempX, wipeTop + position, (int) (control.map(force, 0, TOP_STRIP_FORCE, 18, 45)), stripPaint);
+                            canvas.drawCircle(tempX, wipeTop + position, (int) (map(force, 0, TOP_STRIP_FORCE, 18, 45)), stripPaint);
                         }
                     }
                 }
@@ -282,7 +282,7 @@ public class PressureDistroActivity extends Activity {
                 for (int i = 0; i<ROWS; i++) {
                     for (int j = 0; j < COLS; j++) {
                         if (padCell[i][j] != oldPadCell[i][j]) {
-                            padPaint.setAlpha((int) control.map(padCell[i][j], 0, TOP_PAD_FORCE, 10, 255));
+                            padPaint.setAlpha((int) map(padCell[i][j], 0, TOP_PAD_FORCE, 10, 255));
                             oldPadCell[i][j] = padCell[i][j];
                             canvas.drawRect(RECT_SIZE + (i * RECT_SIZE), 240 + (j * RECT_SIZE), RECT_SIZE + RECT_SIZE + (i * RECT_SIZE), RECT_SIZE + 240 + (j * RECT_SIZE), blank);
                             if (padCell[i][j] > 0) {
@@ -298,7 +298,11 @@ public class PressureDistroActivity extends Activity {
         };
     }
 
-
+    protected long map(long x, long in_min, long in_max, long out_min, long out_max)
+    {
+        if (x > in_max) x = in_max;
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
 
     @Override
     protected void onPause() {
@@ -457,7 +461,7 @@ public class PressureDistroActivity extends Activity {
         stopIoManager();
         startIoManager();
     }
-    
+
     /**
      * Starts the activity, using the supplied driver instance.
      *

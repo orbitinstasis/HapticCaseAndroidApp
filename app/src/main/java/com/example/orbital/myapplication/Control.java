@@ -1,15 +1,10 @@
 package com.example.orbital.myapplication;
 
-/**
- * Created by Orbital on 26/09/2015.
- */
-public class Control {
+import android.app.Activity;
 
+// need to create a listener so that a disconnected line or whatever meaning data here / sport dies, then kill PDE etc (listener in PDE)
 
-    protected long map(long x, long in_min, long in_max, long out_min, long out_max)
-    {
-        if (x > in_max) x = in_max;
-        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-    }
+public class Control extends Activity {
+
 
 }
