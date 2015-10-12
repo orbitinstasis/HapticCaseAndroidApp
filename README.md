@@ -1,7 +1,7 @@
 ## Haptic Feedback Case: Android Application
 > The haptic feedback case is a shell that attaches to most modern android phones, it interfaces the user through positional and pressure input on the sides and rear of their device.   
 
-> This application is designed and developed by Ben Kazemi. 
+> This application is designed and developed by Ben Kazemi in 2015, and accompanies the firmware in its associated repository. 
 
 ## Dependencies
 - Android Studio
@@ -17,8 +17,7 @@ build an apk from android studio and install it from within the host device
 - [ ] Android App: Make a service which allows apps to query sensor state/values without needing to manipulate usb port
 
 ## License 
-
 This code is available under the GNU V3 license. 
-=======
+
 # HapticCaseAndroidApp
 This application accompanies the firmware in its associated repository. 
