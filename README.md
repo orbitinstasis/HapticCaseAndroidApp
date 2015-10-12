@@ -4,7 +4,7 @@
 > This application is designed and developed by Ben Kazemi in 2015, and accompanies the firmware in its associated repository. 
 
 ## Dependencies
-- Android Studio
+- usbSerialForAndroid by mik3y
 - Smartphone with OTG capabilities 
 
 ## Build
