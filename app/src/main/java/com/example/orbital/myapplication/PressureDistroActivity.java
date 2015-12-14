@@ -60,8 +60,8 @@ public class PressureDistroActivity extends Activity {
     protected static final int TOP_STRIP_FORCE = 175;
     private static final int MAX_RECEIVE_VALUE = 254;
     protected static final int TOP_PAD_FORCE = 130;
-    protected static final int BAUD_FULL = 230400;
-    protected static final int BAUD_SLEEP = 14400;
+    protected static final int BAUD_FULL = 115200;
+    protected static final int BAUD_SLEEP = 9600;
     protected static final byte[] PDM_RX_VALUE = {(byte)0b00011111};
     protected static final byte[] RX_SLEEP = {0};
 
@@ -186,6 +186,7 @@ public class PressureDistroActivity extends Activity {
         mSerialIoManager.purgeInputBuffer();
         mSerialIoManager.writeAsync(desiredSensors);
         sPort.setParameters(BAUD_FULL, UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+
     }
 
     protected void programError(){
@@ -202,23 +203,6 @@ public class PressureDistroActivity extends Activity {
                                 moveTaskToBack(true);
                                 Process.killProcess(Process.myPid());
                                 System.exit(1);
-                            }
-                        });
-        AlertDialog alertDialog = alertDialogBuilder.create();
-        alertDialog.show();
-    }
-
-    private void programWarning(){
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-        alertDialogBuilder.setTitle("Sensor selection failed");
-        alertDialogBuilder
-                .setMessage("Please try again or check your connection if this continues to fail")
-                .setCancelable(false)
-                .setPositiveButton("Ok",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                onPause();
-                                moveTaskToBack(true);
                             }
                         });
         AlertDialog alertDialog = alertDialogBuilder.create();

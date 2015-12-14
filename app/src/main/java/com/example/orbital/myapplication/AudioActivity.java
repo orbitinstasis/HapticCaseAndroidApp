@@ -62,6 +62,10 @@ public class AudioActivity extends Activity  {
     private static final int COLS = 16;
     private static final int MAX_RECEIVE_VALUE = 254;
     private static final int TOP_PAD_FORCE = 130;
+    protected static final byte[] PDM_RX_VALUE = {(byte)0b00011111};
+    protected static final byte[] RX_SLEEP = {0};
+    protected static final int BAUD_FULL = 115200;
+    protected static final int BAUD_SLEEP = 9600;
     /*
     GLOBALS
      */
@@ -259,7 +263,7 @@ public class AudioActivity extends Activity  {
             }
             try {
                 sPort.open(connection);
-                sPort.setParameters(230400, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+                sPort.setParameters(BAUD_SLEEP, UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
                 checkButHandler.post(checkButThread);
             } catch (IOException e) {
                 Log.e(TAG, "Error setting up device: " + e.getMessage(), e);
@@ -274,40 +278,59 @@ public class AudioActivity extends Activity  {
             };
         }
         onDeviceStateChange();
+        try {
+            setControl(PDM_RX_VALUE);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected void setControl(byte[] desiredSensors) throws IOException {
+        mSerialIoManager.purgeInputBuffer();
+        mSerialIoManager.writeAsync(desiredSensors);
+        sPort.setParameters(BAUD_FULL, UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+
     }
     
     @Override
     protected void onPause() {
         super.onPause();
-        stopIoManager();
         checkButHandler.removeCallbacks(checkButThread);
+        mSerialIoManager.writeAsync(RX_SLEEP);
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         if (sPort != null) {
             try {
+                sPort.setParameters(BAUD_SLEEP, UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
                 sPort.close();
             } catch (IOException e) {
                 // Ignore.
             }
             sPort = null;
         }
-        finish();
-    }
-
-    @Override
-    public void onBackPressed() {
-        checkButHandler.removeCallbacks(checkButThread);
         stopIoManager();
         finish();
     }
-    public void onDestroy(){
-        super.onDestroy();
-        isRunning = false;
-        try {
-            t.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        t = null;
-    }
+
+//    @Override
+//    public void onBackPressed() {
+//        checkButHandler.removeCallbacks(checkButThread);
+//        stopIoManager();
+//        finish();
+//    }
+//    public void onDestroy(){
+//        super.onDestroy();
+//        isRunning = false;
+//        try {
+//            t.join();
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//        t = null;
+//    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);

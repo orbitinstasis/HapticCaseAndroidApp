@@ -53,6 +53,10 @@ public class ScrollerActivity extends Activity {
     private static final int ROWS = 10;
     private static final int COLS = 16;
     private static final int MAX_RECEIVE_VALUE = 254;
+    protected static final byte[] PDM_RX_VALUE = {(byte)0b00011111};
+    protected static final byte[] RX_SLEEP = {0};
+    protected static final int BAUD_FULL = 115200;
+    protected static final int BAUD_SLEEP = 9600;
     /*
     GLOBALS
      */
@@ -156,7 +160,7 @@ public class ScrollerActivity extends Activity {
             }
             try {
                 sPort.open(connection);
-                sPort.setParameters(230400, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+                sPort.setParameters(BAUD_SLEEP, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
                 scrollControllerHandler.post(scrollControllerThread);
             } catch (IOException e) {
                 Log.e(TAG, "Error setting up device: " + e.getMessage(), e);
@@ -169,6 +173,18 @@ public class ScrollerActivity extends Activity {
             };
         }
         onDeviceStateChange();
+        try {
+            setControl(PDM_RX_VALUE);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected void setControl(byte[] desiredSensors) throws IOException {
+        mSerialIoManager.purgeInputBuffer();
+        mSerialIoManager.writeAsync(desiredSensors);
+        sPort.setParameters(115200, UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+
     }
 
     private long map(long x, long in_min, long in_max, long out_min, long out_max)
@@ -181,25 +197,63 @@ public class ScrollerActivity extends Activity {
         scrollControllerThread = new Thread(){
             public void run() {
                 synchronized (lock) {
-                    if (oldStripForce[0] != stripModel[0][STRIP_PRESSURE]) {
+//               `     if (oldStripForce[3] != stripModel[3][STRIP_PRESSURE]) {
+//                `        int speed = 0;
+//                `        if (isFirstReading) { //avoid bogus reading from an invalid position reading
+//                `            isFirstReading = false;
+//                 `       } else {
+//                 `           if (Math.abs(oldStripPosition[3] - stripModel[3][STRIP_POSITION]) > 0) {
+//                  `              speed = (int) map(stripModel[3][STRIP_PRESSURE], 0, 250, 0, 80) * Math.abs(stripModel[3][STRIP_POSITION] - oldStripPosition[3]); // multiplier is force multiplied by difference of strp position
+//                                if (stripModel[3][STRIP_POSITION] < oldStripPosition[3])  //moving down
+//                                    speed *= -1;
+//                                scrollUiHandler(speed);
+//                            }
+//                        }
+//                        if (stripModel[3][STRIP_PRESSURE] < 1) {
+//                            isFirstReading = true;
+//                            oldStripPosition[3] = 0;
+//                        }
+//                        oldStripForce[3] = stripModel[3][STRIP_PRESSURE];
+//                        oldStripPosition[3] = stripModel[3][STRIP_POSITION];
+//                    }
+
+                    final int tempSensor = 0;
+                    int startCurrentForce = stripModel[tempSensor][STRIP_PRESSURE]; //window.communicator.controller.modelState.getCurrentSideSensor(tempSensor, 0);
+                    int startOldForce = oldStripForce[tempSensor]; // window.communicator.controller.modelState.getOldSideSensor(tempSensor, 0);
+                    if (startOldForce != startCurrentForce) {
+                        final int ERR = 4;
                         int speed = 0;
+                        int startOldPosition = oldStripPosition[tempSensor]; //window.communicator.controller.modelState.getOldSideSensor(tempSensor, 1);
+                        int startCurrentPosition = stripModel[tempSensor][STRIP_POSITION]; //window.communicator.controller.modelState.getCurrentSideSensor(tempSensor, 1);
                         if (isFirstReading) { //avoid bogus reading from an invalid position reading
                             isFirstReading = false;
                         } else {
-                            if (Math.abs(oldStripPosition[0] - stripModel[0][STRIP_POSITION]) > 0) {
-                                speed = (int) map(stripModel[0][STRIP_PRESSURE], 0, 250, 0, 80) * Math.abs(stripModel[0][STRIP_POSITION] - oldStripPosition[0]); // multiplier is force multiplied by difference of strp position
-                                if (stripModel[0][STRIP_POSITION] < oldStripPosition[0])  //moving down
+                            if (startCurrentForce > 25 && (Math.abs(startOldPosition - startCurrentPosition) >= ERR)) {
+                                speed = ((int) map(startCurrentForce, 0, 250, 0, 80)) * Math.abs(startCurrentPosition - startOldPosition); // multiplier is force multiplied by difference of strp position
+                                if (startCurrentPosition < startOldPosition)  //moving down
                                     speed *= -1;
-                                scrollUiHandler(speed);
+                               // speed = (Integer.signum(speed) *  (int) map(Math.abs(speed), 0, 1500, 0, 5));
+                                if (speed != 0) {
+                                    if (speed > 40) //accelerate when applied (excessive) force
+                                        speed += 20;
+                                    int sleep = 3*Math.abs(speed);
+//                                    try {Thread.sleep(sleep);} catch (InterruptedException e) {e.printStackTrace();}
+                                    scrollUiHandler(speed); // do the scroll
+                                }
                             }
                         }
-                        if (stripModel[0][STRIP_PRESSURE] < 1) {
+                        if (startCurrentForce < 1) {
                             isFirstReading = true;
-                            oldStripPosition[0] = 0;
+                            oldStripPosition[tempSensor] = 0; //window.communicator.controller.modelState.setOldSideSensor(tempSensor, 1, 0);
                         }
-                        oldStripForce[0] = stripModel[0][STRIP_PRESSURE];
-                        oldStripPosition[0] = stripModel[0][STRIP_POSITION];
+                        oldStripPosition[tempSensor] = startCurrentPosition; //window.communicator.controller.modelState.setOldSideSensor(tempSensor, 1, startCurrentPosition);
+                        oldStripForce[tempSensor] = stripModel[tempSensor][STRIP_PRESSURE];
                     }
+
+
+
+
+
                     scrollControllerHandler.post(this);
                 }
             }
@@ -233,16 +287,24 @@ public class ScrollerActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        stopIoManager();
+
         scrollControllerHandler.removeCallbacks(scrollControllerThread);
+        mSerialIoManager.writeAsync(RX_SLEEP);
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         if (sPort != null) {
             try {
+                sPort.setParameters(BAUD_SLEEP, UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
                 sPort.close();
             } catch (IOException e) {
                 // Ignore.
             }
             sPort = null;
         }
+        stopIoManager();
         finish();
     }
     /*
